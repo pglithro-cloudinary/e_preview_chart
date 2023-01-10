@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<style>
+	body  {font-family:'Open Sans',Arial,sans-serif;}
+</style>
+<body>
+<form>
+Public Id: <input type="text" id="publicId" name="publicId" ><br/><input type="submit" value="Submit" /><br/>
+
+</form>
+<div id="myChart" style="width:100%; max-width:1000px; height:500px;"></div>
+<button onclick="download(downloadText, 'e_preview.srt', 'text/plain')">Download SRT</button>
+
+<script>
+
+var downloadText = "";
+var chartArray = Array();
+chartArray.push(["Second", "Value"]);
+
+
+
+var getJSON = function(url, callback) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.responseType = 'json';
+  xhr.onload = function() {
+    var status = xhr.status;
+    if (status === 200) {
+      callback(null, xhr.response);
+    } else {
+      callback(status, xhr.response);
+    }
+  };
+  xhr.send();
+};
+var pubId = window.location.search.toString().match(/publicId=([^&]+).*$/)[1];
+
+
+google.charts.load('current', {
+  'packages': ['corechart']
+});
+console.log(pubId);
+google.charts.setOnLoadCallback(drawChart);
+
+function drawChart() {
+  var jsonURL = "https://res.cloudinary.com/patrickg/video/upload/e_preview,fl_getinfo/";
+  jsonURL += pubId;
+  console.log(jsonURL);
+  getJSON(jsonURL,
+    function(err, resp_data) {
+      if (err !== null) {
+        alert('Something went wrong: ' + err);
+      } else {
+        var dataArray = resp_data.data;
+        for (i = 0; i < resp_data.data.length; i++) {
+          chartArray.push([i, resp_data.data[i]]);
+          downloadText += (i + 1) + "\n";
+          var startTime = new Date(i * 1000).toISOString().substring(11, 23).replace(".",",");
+          var endTime = new Date(i + 1 * 1000).toISOString().substring(11, 23).replace(".",",");;
+          downloadText += startTime + " --> " + endTime + "\n";
+          downloadText += resp_data.data[i] + "\n";
+
+          downloadText += "\n";
+
+        }
+
+        var data = google.visualization.arrayToDataTable(chartArray);
+
+        var options = {
+          title: 'e_preview Histogram',
+          vAxis: {
+            title: 'Importance'
+          },
+
+          hAxis: {
+            title: 'Time in Seconds'
+          },
+          legend: {
+            position: 'none'
+          },
+          bar: {
+            gap: "0"
+          }
+        };
+
+        var chart = new google.visualization.ColumnChart(document.getElementById('myChart'));
+        chart.draw(data, options);
+      }
+    });
+
+}
+
+// Function to download data to a file
+function download(data, filename, type) {
+  var file = new Blob([data], {
+    type: type
+  });
+  if (window.navigator.msSaveOrOpenBlob) // IE10+
+    window.navigator.msSaveOrOpenBlob(file, filename);
+  else { // Others
+    var a = document.createElement("a"),
+      url = URL.createObjectURL(file);
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }, 0);
+  }
+}
+
+
+</script>
+
+</body>
+</html>
+
+
+
